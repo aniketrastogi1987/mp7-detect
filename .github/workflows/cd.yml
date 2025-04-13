@@ -57,14 +57,23 @@ jobs:
               --desired-count 1 \
               --launch-type FARGATE \
               --network-configuration "awsvpcConfiguration={subnets=['${{ secrets.SUBNET_ID }}'],securityGroups=['${{ secrets.SECURITY_GROUP_ID }}'],assignPublicIp=ENABLED}"
+          fi
       # Create or update ECS service using the registered task definition
+            # Register task definition first
+      - name: Register ECS task definition
+        run: |
+          aws ecs register-task-definition \
+            --cli-input-json file://bankloan-task-definition.json
+    
       - name: Deploy ECS Service
         run: |
-          TASK_DEF_ARN=$(aws ecs describe-task-definition --task-definition ${{ steps.task-def.outputs.task-definition }} --query 'taskDefinition.taskDefinitionArn' --output text)
-          
+          # Get the latest task definition ARN
+          TASK_DEF_ARN=$(aws ecs list-task-definitions --family-prefix bankloan-model --sort DESC --max-items 1 --query 'taskDefinitionArns[0]' --output text)
+          echo "Using task definition: ${TASK_DEF_ARN}"
+              
           # Check if service exists
           if ! aws ecs describe-services --cluster xgboost-ecr --services bankloan-model-service --query 'services[0]' --output text; then
-            # Create new service
+            echo "Creating new ECS service..."
             aws ecs create-service \
               --cluster xgboost-ecr \
               --service-name bankloan-model-service \
@@ -73,14 +82,13 @@ jobs:
               --launch-type FARGATE \
               --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_ID }}],securityGroups=[${{ secrets.SECURITY_GROUP_ID }}],assignPublicIp=ENABLED}"
           else
-            # Update existing service
+            echo "Updating existing ECS service..."
             aws ecs update-service \
               --cluster xgboost-ecr \
               --service bankloan-model-service \
               --task-definition ${TASK_DEF_ARN} \
               --force-new-deployment
           fi
-
       - name: Wait for service stability
         run: |
           aws ecs wait services-stable \

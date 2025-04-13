@@ -8,7 +8,7 @@
     "containerDefinitions": [
         {
             "name": "bankloan-model-api",
-            "image": "${ECR_REGISTRY}/${ECR_REPO}:latest",
+            "image": "CONTAINER_IMAGE",
             "essential": true,
             "portMappings": [
                 {
