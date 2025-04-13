@@ -42,7 +42,7 @@ jobs:
             aws ecs create-service \
               --cluster xgboost-ecr \
               --service-name bankloan-model-service \
-              --task-definition ${{ secrets.TASK_DEFINITION_NAME }} \
+              --task-definition ${{ steps.task-def.outputs.task-definition }} \
               --desired-count 1 \
               --launch-type FARGATE \
               --network-configuration 'awsvpcConfiguration={subnets=["${{ secrets.SUBNET_ID }}"],securityGroups=["${{ secrets.SECURITY_GROUP_ID }}"],assignPublicIp="ENABLED"}'
