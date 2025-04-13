@@ -138,14 +138,15 @@ jobs:
         retention-days: 1
 
   push-image:
-    needs: [retrain, test, build]
+    needs: [train, tune, test, build]
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
+    
     steps:
-    - name: Repo Checkout
-      uses: actions/checkout@v3  # Update to v3 for consistency
+    - name: Checkout code
+      uses: actions/checkout@v3
 
     - uses: actions/download-artifact@v4
       with:
@@ -163,30 +164,29 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
-  
-    - name: Log in to Amazon ECR
-      id: login-ecr
+    
+    - name: Login to Amazon ECR Public
+      id: login-ecr-public
       uses: aws-actions/amazon-ecr-login@v1
-  
+      with:
+        registry-type: public
+        
     - name: Build, Tag, and Push Docker image
       env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPO: ${{ secrets.ECR_REPO }}
-        IMAGE_TAG: ${{ github.sha }}  # Using commit SHA for versioning
+        REGISTRY: public.ecr.aws/k8f5x7g7
+        REPOSITORY: aniketrastogi1987/aiml-mp-xgboost
+        IMAGE_TAG: ${{ github.sha }}
       run: |
+        # Debug information
+        echo "Building image: $REGISTRY/$REPOSITORY:$IMAGE_TAG"
+        
         # Build the docker image
-        docker build -t $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG .
-        docker tag $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPO:latest
+        docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+        docker tag $REGISTRY/$REPOSITORY:$IMAGE_TAG $REGISTRY/$REPOSITORY:latest
         
         # Push both tagged versions
-        echo "Pushing image to ECR..."
-        docker push $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG
-        docker push $ECR_REGISTRY/$ECR_REPO:latest
+        docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+        docker push $REGISTRY/$REPOSITORY:latest
         
-        # Debug information
-        echo "Image URI: $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG"
-        echo "Latest URI: $ECR_REGISTRY/$ECR_REPO:latest"
-        
-    - name: Log out from Amazon ECR
-      if: always()
-      run: docker logout ${{ steps.login-ecr.outputs.registry }}
+        # Output the image URI for use in CD pipeline
+        echo "IMAGE_URI=$REGISTRY/$REPOSITORY:$IMAGE_TAG" >> $GITHUB_ENV

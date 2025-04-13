@@ -1,0 +1,27 @@
+{
+    "family": "bankloan-model",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": ["FARGATE"],
+    "cpu": "256",
+    "memory": "512",
+    "containerDefinitions": [
+        {
+            "name": "bankloan-model-api",
+            "image": "${ECR_REGISTRY}/${ECR_REPO}:latest",
+            "essential": true,
+            "portMappings": [
+                {
+                    "containerPort": 8001,
+                    "hostPort": 8001,
+                    "protocol": "tcp"
+                }
+            ],
+            "environment": [
+                {
+                    "name": "AWS_REGION",
+                    "value": "${AWS_REGION}"
+                }
+            ]
+        }
+    ]
+}
