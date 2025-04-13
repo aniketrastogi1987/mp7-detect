@@ -2,8 +2,9 @@ import sys
 from pathlib import Path
 file = Path(__file__).resolve()
 parent, root = file.parent, file.parents[1]
+print(f"Root directory: {root}")
 sys.path.append(str(root))
-#print(sys.path)
+print(sys.path)
 from typing import Any
 
 from fastapi import APIRouter, FastAPI, Request

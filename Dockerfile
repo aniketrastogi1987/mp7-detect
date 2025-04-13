@@ -2,10 +2,10 @@
 FROM python:3.10-slim
 
 # copy application files
-ADD /titanic_model_api /titanic_model_api/
+ADD /bankloan_model_api /bankloan_model_api/
 
 # specify working directory
-WORKDIR /titanic_model_api
+WORKDIR /bankloan_model_api
 
 # update pip
 RUN pip install --upgrade pip

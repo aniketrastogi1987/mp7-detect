@@ -1,0 +1,79 @@
+# Data Files
+training_data_file: bankloan.csv
+# test_data_file: test.csv
+
+# Variables
+# The variable we are attempting to predict (Survival)
+loan_status: loan_status
+
+pipeline_name: bankloan_model
+pipeline_save_file: bankloan__model_output_v
+
+features:      # final features to be use
+  - person_age
+  - person_gender
+  - person_education 
+  - person_income 
+  - person_emp_exp
+  - person_home_ownership
+  - loan_amnt
+  - loan_intent
+  - loan_int_rate
+  - cb_person_cred_hist_length
+  - credit_score
+  - previous_loan_defaults_on_file
+
+unused_fields:  # Features to drop before pipeline
+  - loan_percent_income
+
+# Features inside processing pipeline
+
+gender_var: person_gender
+  
+education_var: person_education
+
+home_own_var: person_home_ownership
+
+intent_var: loan_intent
+
+previous_defaults_var: previous_loan_defaults_on_file
+
+gender_mappings:
+  female: 0
+  male: 1
+
+education_mappings:
+  Master: 0
+  High School: 1
+  Bachelor: 2
+  Associate: 3
+  Doctorate: 4
+
+
+home_own_mappings:
+  RENT: 0
+  MORTGAGE: 1
+  OTHER: 2
+  OWN: 3
+  
+intent_mappings:
+  PERSONAL: 0
+  EDUCATION: 1
+  MEDICAL: 2
+  VENTURE: 3
+  DEBTCONSOLIDATION: 4
+  HOMEIMPROVEMENT: 5
+
+previous_defaults_mappings:
+  Yes: 1
+  No: 0
+
+# set train/test split
+test_size: 0.20
+
+# to set the random seed
+random_state: 42
+# alogrithm parameters
+n_estimators: 150
+max_depth: 5
+max_features: 3

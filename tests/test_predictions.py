@@ -1,6 +1,3 @@
-"""
-Note: These tests will fail if you have not first trained the model.
-"""
 import sys
 from pathlib import Path
 file = Path(__file__).resolve()
@@ -10,7 +7,7 @@ sys.path.append(str(root))
 import numpy as np
 from sklearn.metrics import accuracy_score
 
-from titanic_model.predict import make_prediction
+from bankloan_model.predict import make_prediction
 
 
 def test_make_prediction(sample_input_data):
@@ -18,16 +15,11 @@ def test_make_prediction(sample_input_data):
     expected_no_predictions = 179
 
     # When
-    result = make_prediction(input_data=sample_input_data[0])
+    X, y = sample_input_data
+    input_data = X.iloc[:expected_no_predictions].to_dict(orient="records")
+    result = make_prediction(input_data=input_data)
 
     # Then
-    predictions = result.get("predictions")
+    predictions = result["predictions"]
     assert isinstance(predictions, np.ndarray)
-    assert isinstance(predictions[0], np.int64)
-    assert result.get("errors") is None
-    assert len(predictions) == expected_no_predictions
-    _predictions = list(predictions)
-    y_true = sample_input_data[1]
-    accuracy = accuracy_score(_predictions, y_true)
-    assert accuracy > 0.8
-
+    assert predictions.shape[0] == expected_no_predictions

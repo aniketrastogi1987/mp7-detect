@@ -11,8 +11,8 @@ import numpy as np
 import pandas as pd
 from fastapi import APIRouter, HTTPException, Body
 from fastapi.encoders import jsonable_encoder
-from titanic_model import __version__ as model_version
-from titanic_model.predict import make_prediction
+from bankloan_model import __version__ as model_version
+from bankloan_model.predict import make_prediction
 
 from app import __version__, schemas
 from app.config import settings
@@ -36,26 +36,28 @@ def health() -> dict:
 example_input = {
     "inputs": [
         {
-            "PassengerId": 79,
-            "Pclass": 2,
-            "Name": "Caldwell, Master. Alden Gates",
-            "Sex": "male",
-            "Age": 0.83,
-            "SibSp": 0,
-            "Parch": 2,
-            "Ticket": "248738",
-            "Cabin": 'A5',
-            "Embarked": "S",
-            "Fare": 29,
+            "person_age":40,
+            "person_gender":"male",
+            "person_education":"Doctorate",
+            "person_income":20000,
+            "person_emp_exp":4,
+            "person_home_ownership":"RENT",
+            "loan_amnt":10000,
+            "loan_intent":'PERSONAL',
+            "loan_int_rate":14.2,
+            "loan_percent_income":0.5,
+            "cb_person_cred_hist_length":2,
+            "credit_score":605, 
+            "previous_loan_defaults_on_file":'No'
         }
-    ]
+    ]          
 }
 
 
 @api_router.post("/predict", response_model=schemas.PredictionResults, status_code=200)
 async def predict(input_data: schemas.MultipleDataInputs = Body(..., example=example_input)) -> Any:
     """
-    Survival predictions with the titanic_model
+    Survival predictions with the bankloan_model
     """
 
     input_df = pd.DataFrame(jsonable_encoder(input_data.inputs))
