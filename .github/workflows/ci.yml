@@ -28,7 +28,8 @@ jobs:
         path: bankloan_model/trained_models/*.pkl
         retention-days: 1
   
-
+  
+  
   tune:
     needs: train
     runs-on: ubuntu-latest
@@ -41,22 +42,58 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/requirements.txt
+          pip install -e .
+          pip install optuna
+
       - uses: actions/download-artifact@v4
         with:
           name: my-trained-pipeline
           path: bankloan_model/trained_models
+
       - name: Run Hyperparameter Tuning
         run: python bankloan_model/tune_hyperparameters.py
 
-      
       - uses: actions/upload-artifact@v4
         with:
           name: best-params
           path: bankloan_model/best_trial.json
           retention-days: 2
 
-  test:
+  retrain:
     needs: tune
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/requirements.txt
+          pip install -e .
+      - uses: actions/download-artifact@v4
+        with:
+          name: best-params
+          path: bankloan_model/
+      - name: Retrain with optimized parameters
+        run: python bankloan_model/train_pipeline.py --best_params best_trial.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: optimized-model
+          path: bankloan_model/trained_models/*.pkl
+          retention-days: 2
+
+  test:
+    needs: retrain
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -76,7 +113,7 @@ jobs:
       run: pytest
 
   build:
-    needs: [train, test]
+    needs: [retrain, test]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -101,7 +138,7 @@ jobs:
         retention-days: 1
 
   push-image:
-    needs: [train, test, build]
+    needs: [retrain, test, build]
     runs-on: ubuntu-latest
     steps:
     - name: Repo Checkout
