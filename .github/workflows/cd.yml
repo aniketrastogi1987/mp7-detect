@@ -43,7 +43,7 @@ jobs:
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: bankloan-model-service
-          cluster: bankloan-model-cluster
+          cluster: xgboost-ecr
           wait-for-service-stability: true
 
       - name: Update Lambda Function
