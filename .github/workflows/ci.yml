@@ -41,10 +41,14 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: '3.10'
-
+      - uses: actions/download-artifact@v4
+        with:
+          name: my-trained-pipeline
+          path: bankloan_model/trained_models
       - name: Run Hyperparameter Tuning
         run: python bankloan_model/tune_hyperparameters.py
 
+      
       - uses: actions/upload-artifact@v4
         with:
           name: best-params
