@@ -26,46 +26,69 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login to Amazon ECR
+      - name: Login to Amazon ECR Public
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
+        with:
+          registry-type: public
 
-      - name: Ensure ECS Cluster Exists
-        run: |
-          if ! aws ecs describe-clusters --clusters xgboost-ecr --query 'clusters[?clusterName==`xgboost-ecr`]' | grep xgboost-ecr; then
-            aws ecs create-cluster --cluster-name xgboost-ecr
-          fi
-
-      - name: Ensure ECS Service Exists
-        run: |
-          if ! aws ecs describe-services --cluster xgboost-ecr --services bankloan-model-service --query 'services[?serviceName==`bankloan-model-service`]' | grep bankloan-model-service; then
-            aws ecs create-service \
-              --cluster xgboost-ecr \
-              --service-name bankloan-model-service \
-              --task-definition ${{ steps.task-def.outputs.task-definition }} \
-              --desired-count 1 \
-              --launch-type FARGATE \
-              --network-configuration 'awsvpcConfiguration={subnets=["${{ secrets.SUBNET_ID }}"],securityGroups=["${{ secrets.SECURITY_GROUP_ID }}"],assignPublicIp="ENABLED"}'
-          fi
-
+      # First register the task definition
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: ./bankloan-task-definition.json
           container-name: bankloan-model-api
-          image: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO }}:latest
+          image: public.ecr.aws/k8f5x7g7/aniketrastogi1987/aiml-mp-xgboost:latest
+
+      # Create ECS Cluster if it doesn't exist
+      - name: Ensure ECS Cluster Exists
+        run: |
+          aws ecs describe-clusters --clusters xgboost-ecr || \
+          aws ecs create-cluster --cluster-name xgboost-ecr
       
-      - name: Deploy to Amazon ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: bankloan-model-service
-          cluster: xgboost-ecr
-          wait-for-service-stability: true
+      - name: Ensure ECS Service Exists
+        run: |
+          if ! aws ecs describe-services --cluster xgboost-ecr --services bankloan-model-service --query 'services[0]' --output text; then
+            aws ecs create-service \
+              --cluster xgboost-ecr \
+              --service-name bankloan-model-service \
+              --task-definition ${{ steps.task-def.outputs.task-definition }} \
+              --desired-count 1 \
+              --launch-type FARGATE \
+              --network-configuration "awsvpcConfiguration={subnets=['${{ secrets.SUBNET_ID }}'],securityGroups=['${{ secrets.SECURITY_GROUP_ID }}'],assignPublicIp=ENABLED}"
+      # Create or update ECS service using the registered task definition
+      - name: Deploy ECS Service
+        run: |
+          TASK_DEF_ARN=$(aws ecs describe-task-definition --task-definition ${{ steps.task-def.outputs.task-definition }} --query 'taskDefinition.taskDefinitionArn' --output text)
+          
+          # Check if service exists
+          if ! aws ecs describe-services --cluster xgboost-ecr --services bankloan-model-service --query 'services[0]' --output text; then
+            # Create new service
+            aws ecs create-service \
+              --cluster xgboost-ecr \
+              --service-name bankloan-model-service \
+              --task-definition ${TASK_DEF_ARN} \
+              --desired-count 1 \
+              --launch-type FARGATE \
+              --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_ID }}],securityGroups=[${{ secrets.SECURITY_GROUP_ID }}],assignPublicIp=ENABLED}"
+          else
+            # Update existing service
+            aws ecs update-service \
+              --cluster xgboost-ecr \
+              --service bankloan-model-service \
+              --task-definition ${TASK_DEF_ARN} \
+              --force-new-deployment
+          fi
+
+      - name: Wait for service stability
+        run: |
+          aws ecs wait services-stable \
+            --cluster xgboost-ecr \
+            --services bankloan-model-service
 
       - name: Update Lambda Function
         run: |
           aws lambda update-function-code \
             --function-name bankloan-model-lambda \
-            --image-uri ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO }}:latest
+            --image-uri public.ecr.aws/k8f5x7g7/aniketrastogi1987/aiml-mp-xgboost:latest
