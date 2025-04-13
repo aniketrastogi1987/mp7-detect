@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3  # Ensure the repository is checked out
+        uses: actions/checkout@v3
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -30,6 +30,24 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      - name: Ensure ECS Cluster Exists
+        run: |
+          if ! aws ecs describe-clusters --clusters xgboost-ecr --query 'clusters[?clusterName==`xgboost-ecr`]' | grep xgboost-ecr; then
+            aws ecs create-cluster --cluster-name xgboost-ecr
+          fi
+
+      - name: Ensure ECS Service Exists
+        run: |
+          if ! aws ecs describe-services --cluster xgboost-ecr --services bankloan-model-service --query 'services[?serviceName==`bankloan-model-service`]' | grep bankloan-model-service; then
+            aws ecs create-service \
+              --cluster xgboost-ecr \
+              --service-name bankloan-model-service \
+              --task-definition ${{ secrets.TASK_DEFINITION_NAME }} \
+              --desired-count 1 \
+              --launch-type FARGATE \
+              --network-configuration 'awsvpcConfiguration={subnets=["${{ secrets.SUBNET_ID }}"],securityGroups=["${{ secrets.SECURITY_GROUP_ID }}"],assignPublicIp="ENABLED"}'
+          fi
+
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
@@ -37,7 +55,7 @@ jobs:
           task-definition: ./bankloan-task-definition.json
           container-name: bankloan-model-api
           image: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO }}:latest
-      
+
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
