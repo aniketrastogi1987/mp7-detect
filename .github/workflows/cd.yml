@@ -1,6 +1,5 @@
 name: CD Pipeline
 
-# Only trigger when the CI Pipeline completes successfully
 on:
   workflow_run:
     workflows: ["CI Pipeline"]
@@ -17,6 +16,9 @@ jobs:
       contents: read
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3  # Ensure the repository is checked out
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -32,7 +34,7 @@ jobs:
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: bankloan-task-definition.json
+          task-definition: ./bankloan-task-definition.json
           container-name: bankloan-model-api
           image: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPO }}:latest
       

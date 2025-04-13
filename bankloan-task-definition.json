@@ -4,6 +4,7 @@
     "requiresCompatibilities": ["FARGATE"],
     "cpu": "256",
     "memory": "512",
+    "executionRoleArn": "arn:aws:iam::269272823707:user/s3-bucket-user",
     "containerDefinitions": [
         {
             "name": "bankloan-model-api",
