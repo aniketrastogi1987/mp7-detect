@@ -47,18 +47,13 @@ jobs:
           aws ecs describe-clusters --clusters xgboost-ecr || \
           aws ecs create-cluster --cluster-name xgboost-ecr
       
-        # Create or update ECS service using the registered task definition
-        # Register task definition first
-      - name: Register ECS task definition
-        run: |
-          aws ecs register-task-definition \
-            --cli-input-json file://bankloan-task-definition.json
     
       - name: Deploy ECS Service
         run: |
           # Get the latest task definition ARN
-          TASK_DEF_ARN=$(aws ecs list-task-definitions --family-prefix bankloan-model --sort DESC --max-items 1 --query 'taskDefinitionArns[0]' --output text)
-          echo "Using task definition: ${TASK_DEF_ARN}"
+          # TASK_DEF_ARN=$(aws ecs list-task-definitions --family-prefix bankloan-model --sort DESC --max-items 1 --query 'taskDefinitionArns[0]' --output text)
+          SUBNETS=$(echo "${{ secrets.SUBNET_ID }}" | sed 's/,/","/g' | sed 's/^/["/' | sed 's/$/"]/')
+          echo "Using task definition: ${{ steps.task-def.outputs.task-definition }}"
               
           # Check if service exists
           if ! aws ecs describe-services --cluster xgboost-ecr --services bankloan-model-service --query 'services[0]' --output text; then
@@ -66,7 +61,7 @@ jobs:
             aws ecs create-service \
               --cluster xgboost-ecr \
               --service-name bankloan-model-service \
-              --task-definition ${TASK_DEF_ARN} \
+              --task-definition ${{ steps.task-def.outputs.task-definition }} \
               --desired-count 1 \
               --launch-type FARGATE \
               --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_ID }}],securityGroups=[${{ secrets.SECURITY_GROUP_ID }}],assignPublicIp=ENABLED}"
@@ -75,8 +70,8 @@ jobs:
             aws ecs update-service \
               --cluster xgboost-ecr \
               --service bankloan-model-service \
-              --task-definition ${TASK_DEF_ARN} \
-              --force-new-deployment
+              --task-definition ${{ steps.task-def.outputs.task-definition }} \
+              --force-new-deployment \
               --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_ID }}],securityGroups=[${{ secrets.SECURITY_GROUP_ID }}],assignPublicIp=ENABLED}"
           fi
      # - name: Wait for service stability
