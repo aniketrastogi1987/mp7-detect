@@ -8,7 +8,7 @@
     "containerDefinitions": [
         {
             "name": "bankloan-model-api",
-            "image": "CONTAINER_IMAGE",
+            "image": "public.ecr.aws/k8f5x7g7/aniketrastogi1987/aiml-mp-xgboost:latest",
             "essential": true,
             "portMappings": [
                 {
