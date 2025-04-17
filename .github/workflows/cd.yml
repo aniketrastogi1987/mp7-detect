@@ -47,19 +47,8 @@ jobs:
           aws ecs describe-clusters --clusters xgboost-ecr || \
           aws ecs create-cluster --cluster-name xgboost-ecr
       
-      - name: Ensure ECS Service Exists
-        run: |
-          if ! aws ecs describe-services --cluster xgboost-ecr --services bankloan-model-service --query 'services[0]' --output text; then
-            aws ecs create-service \
-              --cluster xgboost-ecr \
-              --service-name bankloan-model-service \
-              --task-definition ${{ steps.task-def.outputs.task-definition }} \
-              --desired-count 1 \
-              --launch-type FARGATE \
-              --network-configuration "awsvpcConfiguration={subnets=['${{ secrets.SUBNET_ID }}'],securityGroups=['${{ secrets.SECURITY_GROUP_ID }}'],assignPublicIp=ENABLED}"
-          fi
-      # Create or update ECS service using the registered task definition
-            # Register task definition first
+        # Create or update ECS service using the registered task definition
+        # Register task definition first
       - name: Register ECS task definition
         run: |
           aws ecs register-task-definition \
@@ -88,15 +77,16 @@ jobs:
               --service bankloan-model-service \
               --task-definition ${TASK_DEF_ARN} \
               --force-new-deployment
+              --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_ID }}],securityGroups=[${{ secrets.SECURITY_GROUP_ID }}],assignPublicIp=ENABLED}"
           fi
-      - name: Wait for service stability
-        run: |
-          aws ecs wait services-stable \
-            --cluster xgboost-ecr \
-            --services bankloan-model-service
+     # - name: Wait for service stability
+     #   run: |
+     #     aws ecs wait services-stable \
+     #       --cluster xgboost-ecr \
+     #       --services bankloan-model-service
 
-      - name: Update Lambda Function
-        run: |
-          aws lambda update-function-code \
-            --function-name bankloan-model-lambda \
-            --image-uri public.ecr.aws/k8f5x7g7/aniketrastogi1987/aiml-mp-xgboost:latest
+     # - name: Update Lambda Function
+     #   run: |
+     #     aws lambda update-function-code \
+     #       --function-name bankloan-model-lambda \
+     #       --image-uri public.ecr.aws/k8f5x7g7/aniketrastogi1987/aiml-mp-xgboost:latest
