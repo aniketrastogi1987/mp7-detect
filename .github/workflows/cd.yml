@@ -40,7 +40,15 @@ jobs:
           task-definition: ./bankloan-task-definition.json
           container-name: bankloan-model-api
           image: public.ecr.aws/k8f5x7g7/aniketrastogi1987/aiml-mp-xgboost:latest
-
+      
+      - name: Register task definition
+        id: register-task-def
+        run: |
+          TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://${{ steps.task-def.outputs.task-definition }} \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+          echo "task_def_arn=${TASK_DEF_ARN}" >> $GITHUB_OUTPUT
       # Create ECS Cluster if it doesn't exist
       - name: Ensure ECS Cluster Exists
         run: |
@@ -53,7 +61,7 @@ jobs:
           # Get the latest task definition ARN
           # TASK_DEF_ARN=$(aws ecs list-task-definitions --family-prefix bankloan-model --sort DESC --max-items 1 --query 'taskDefinitionArns[0]' --output text)
           SUBNETS=$(echo "${{ secrets.SUBNET_ID }}" | sed 's/,/","/g' | sed 's/^/["/' | sed 's/$/"]/')
-          echo "Using task definition: ${{ steps.task-def.outputs.task-definition }}"
+          echo "Using task definition ARN: ${{ steps.register-task-def.outputs.task_def_arn }}"
               
           # Check if service exists
           if ! aws ecs describe-services --cluster xgboost-ecr --services bankloan-model-service --query 'services[0]' --output text; then
@@ -61,7 +69,7 @@ jobs:
             aws ecs create-service \
               --cluster xgboost-ecr \
               --service-name bankloan-model-service \
-              --task-definition ${{ steps.task-def.outputs.task-definition }} \
+              --task-definition ${{ steps.register-task-def.outputs.task_def_arn }} \
               --desired-count 1 \
               --launch-type FARGATE \
               --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_ID }}],securityGroups=[${{ secrets.SECURITY_GROUP_ID }}],assignPublicIp=ENABLED}"
@@ -70,7 +78,7 @@ jobs:
             aws ecs update-service \
               --cluster xgboost-ecr \
               --service bankloan-model-service \
-              --task-definition ${{ steps.task-def.outputs.task-definition }} \
+              --task-definition ${{ steps.register-task-def.outputs.task_def_arn }} \
               --force-new-deployment \
               --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_ID }}],securityGroups=[${{ secrets.SECURITY_GROUP_ID }}],assignPublicIp=ENABLED}"
           fi
