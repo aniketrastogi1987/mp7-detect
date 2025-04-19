@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  deploy:
+  authenticate:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -31,7 +31,12 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
         with:
           registry-type: public
-
+  task-def:
+    needs: authenticate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false        
+    steps:
       # First register the task definition
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
@@ -54,3 +59,36 @@ jobs:
         run: |
           aws ecs describe-clusters --clusters xgboost-ecr || \
           aws ecs create-cluster --cluster-name xgboost-ecr
+    
+  deploy-ecs:
+    needs: task-def
+    runs-on: ubuntu-latest
+    steps:
+    - name: Deploy ECS Service
+      run: |
+        echo "Using task definition ARN: ${{ steps.register-task-def.outputs.task_def_arn }}"
+          
+        # Improved service existence check
+        SERVICE_EXISTS=$(aws ecs describe-services \
+          --cluster xgboost-ecr \
+          --services bankloan-model-service \
+          --query 'services[?status!=`INACTIVE`].status' \
+          --output text || echo "INACTIVE")
+        if [ "$SERVICE_EXISTS" = "INACTIVE" ]; then
+          echo "Creating new ECS service..."
+          aws ecs create-service \
+            --cluster xgboost-ecr \
+            --service-name bankloan-model-service \
+            --task-definition ${{ steps.register-task-def.outputs.task_def_arn }} \
+            --desired-count 1 \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_ID }}],securityGroups=[${{ secrets.SECURITY_GROUP_ID }}],assignPublicIp=ENABLED}"
+        else
+          echo "Updating existing ECS service..."
+          aws ecs update-service \
+            --cluster xgboost-ecr \
+            --service-name bankloan-model-service \
+            --task-definition ${{ steps.register-task-def.outputs.task_def_arn }} \
+            --force-new-deployment \
+            --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_ID }}],securityGroups=[${{ secrets.SECURITY_GROUP_ID }}],assignPublicIp=ENABLED}"
+        fi

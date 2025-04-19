@@ -2,9 +2,9 @@
     "family": "bankloan-model",
     "networkMode": "awsvpc",
     "requiresCompatibilities": ["FARGATE"],
-    "cpu": "256",
-    "memory": "512",
-    "executionRoleArn": "arn:aws:iam::269272823707:role/ECSExecutionRole",
+    "cpu": "1 vCPU",
+    "memory": "3 GB",
+    "executionRoleArn": "arn:aws:iam::269272823707:role/aws-ecs",
     "containerDefinitions": [
         {
             "name": "bankloan-model-api",
@@ -15,12 +15,6 @@
                     "containerPort": 8001,
                     "hostPort": 8001,
                     "protocol": "tcp"
-                }
-            ],
-            "environment": [
-                {
-                    "name": "AWS_REGION",
-                    "value": "${AWS_REGION}"
                 }
             ]
         }
