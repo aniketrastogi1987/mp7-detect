@@ -74,6 +74,13 @@ jobs:
     needs: task-def
     runs-on: ubuntu-latest
     steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+    
     - name: Deploy ECS Service
       run: |
         echo "Using task definition ARN: ${{ steps.register-task-def.outputs.task_def_arn }}"
@@ -84,12 +91,13 @@ jobs:
           --services bankloan-model-service \
           --query 'services[?status!=`INACTIVE`].status' \
           --output text || echo "INACTIVE")
+
         if [ "$SERVICE_EXISTS" = "INACTIVE" ]; then
           echo "Creating new ECS service..."
           aws ecs create-service \
             --cluster xgboost-ecr \
             --service-name bankloan-model-service \
-            --task-definition ${{ steps.register-task-def.outputs.task_def_arn }} \
+            --task-definition ${{ needs.task-def.outputs.task_def_arn }} \
             --desired-count 1 \
             --launch-type FARGATE \
             --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_ID }}],securityGroups=[${{ secrets.SECURITY_GROUP_ID }}],assignPublicIp=ENABLED}"
@@ -98,7 +106,7 @@ jobs:
           aws ecs update-service \
             --cluster xgboost-ecr \
             --service-name bankloan-model-service \
-            --task-definition ${{ steps.register-task-def.outputs.task_def_arn }} \
+            --task-definition ${{ needs.task-def.outputs.task_def_arn }} \
             --force-new-deployment \
             --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_ID }}],securityGroups=[${{ secrets.SECURITY_GROUP_ID }}],assignPublicIp=ENABLED}"
         fi
