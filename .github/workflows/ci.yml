@@ -39,7 +39,7 @@ jobs:
         python-version: '3.10'
     - uses: actions/download-artifact@v4
       with:
-        name: optimized-model
+        name: my-trained-pipeline
         path: patient_model/trained_models
     - name: Install dependencies
       run: pip install -r requirements/test_requirements.txt
@@ -59,7 +59,7 @@ jobs:
         python-version: '3.10'
     - uses: actions/download-artifact@v4
       with:
-        name: optimized-model
+        name: my-trained-pipeline
         path: patient_model/trained_models
     - name: Install dependencies
       run: pip install --upgrade build
@@ -92,12 +92,12 @@ jobs:
     - name: Build the Docker image for Fastapi app
       env:
         DOCKER_USER: ${{ secrets.DOCKER_USER_NAME }}
-      run: docker build . -f Dockerfile -t $DOCKER_USER/titanic-fastapi:latest
+      run: docker build . -f Dockerfile -t $DOCKER_USER/patient-gradio:latest
 
     - name: Push the Docker Image
       env:
         DOCKER_USER: ${{ secrets.DOCKER_USER_NAME }}
-      run: docker push $DOCKER_USER/titanic-fastapi
+      run: docker push $DOCKER_USER/patient-gradio
 
     - name: Logout to Docker hub
       run: docker logout
@@ -116,12 +116,12 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: my-build-package
-        path: bankloan_model_api
+        path: patient_model_api
         
     - uses: actions/download-artifact@v4
       with:
-        name: optimized-model
-        path: bankloan_model/trained_models
+        name: my-trained-pipeline
+        path: patient_model/trained_models
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
