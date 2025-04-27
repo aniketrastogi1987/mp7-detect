@@ -8,6 +8,16 @@ on:
     branches:
       - main
 
+
+
+env:
+  ECS_SERVICE: patient-model-service-zqq09nmt                 # set this to your Amazon ECS service name
+  ECS_CLUSTER: xgboost-ecr                 # set this to your Amazon ECS cluster name
+  ECS_TASK_DEFINITION: patient-task-definition.json # set this to the path to your Amazon ECS task definition
+                                               # file, e.g. .aws/task-definition.json
+  CONTAINER_NAME: patient-model-api           # set this to the name of the container in the
+                                               # containerDefinitions section of your task definition
+
 jobs:
   authenticate:
     runs-on: ubuntu-latest
@@ -64,8 +74,12 @@ jobs:
             --query 'taskDefinition.taskDefinitionArn' \
             --output text)
           echo "task_def_arn=${TASK_DEF_ARN}" >> $GITHUB_OUTPUT
-      # Create ECS Cluster if it doesn't exist
-      - name: Ensure ECS Cluster Exists
-        run: |
-          aws ecs describe-clusters --clusters xgboost-ecr || \
-          aws ecs create-cluster --cluster-name xgboost-ecr
+   
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+    
