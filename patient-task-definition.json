@@ -1,13 +1,13 @@
 {
-    "family": "bankloan-model",
+    "family": "patient-model",
     "networkMode": "awsvpc",
     "requiresCompatibilities": ["FARGATE"],
     "cpu": "1 vCPU",
-    "memory": "3 GB",
+    "memory": "4 GB",
     "executionRoleArn": "arn:aws:iam::269272823707:role/aws-ecs",
     "containerDefinitions": [
         {
-            "name": "bankloan-model-api",
+            "name": "patient-model-api",
             "image": "public.ecr.aws/k8f5x7g7/aniketrastogi1987/aiml-mp-xgboost:latest",
             "essential": true,
             "portMappings": [

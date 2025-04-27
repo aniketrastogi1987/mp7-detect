@@ -10,8 +10,8 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel, ValidationError
 
-from bankloan_model.config.core import config
-from bankloan_model.processing.data_manager import pre_pipeline_preparation
+from patient_model.config.core import config
+from patient_model.processing.data_manager import pre_pipeline_preparation
 
 
 def validate_inputs(*, input_df: pd.DataFrame) -> Tuple[pd.DataFrame, Optional[dict]]:
@@ -23,7 +23,7 @@ def validate_inputs(*, input_df: pd.DataFrame) -> Tuple[pd.DataFrame, Optional[d
         input_list = input_df.to_dict(orient="records")
         
         # Validate data using Pydantic schema
-        validated_data = [BankLoanDataInputSchema(**item) for item in input_list]
+        validated_data = [PatientDataInputSchema(**item) for item in input_list]
         validated_data = pd.DataFrame([item.dict() for item in validated_data])
     except ValidationError as e:
         errors = [error.dict() for error in e.errors()]
@@ -32,20 +32,19 @@ def validate_inputs(*, input_df: pd.DataFrame) -> Tuple[pd.DataFrame, Optional[d
     return validated_data, errors
 
 
-class BankLoanDataInputSchema(BaseModel):
-    person_age: Optional[int]
-    person_gender: Optional[str]
-    person_education: Optional[str]
-    person_income: Optional[int]
-    person_emp_exp: Optional[int]
-    person_home_ownership: Optional[str]
-    loan_amnt: Optional[int]
-    loan_intent: Optional[str]
-    loan_int_rate: Optional[float]
-    loan_percent_income: Optional[float]  # Ensure this is present and of correct type
-    cb_person_cred_hist_length: Optional[int]
-    credit_score: Optional[int]
-    previous_loan_defaults_on_file: Optional[str]
+class PatientDataInputSchema(BaseModel):
+    age: Optional[int]
+    anaemia: Optional[int]
+    creatinine_phosphokinase: Optional[int]
+    diabetes: Optional[int]
+    ejection_fraction: Optional[int]
+    high_blood_pressure: Optional[int]
+    platelets: Optional[float]
+    serum_creatinine: Optional[float]
+    serum_sodium: Optional[int]  # Ensure this is present and of correct type
+    sex: Optional[int]
+    smoking: Optional[int]
+    time: Optional[int]
 
 def validate_inputs(input_df: pd.DataFrame) -> Tuple[pd.DataFrame, List]:
     
@@ -55,7 +54,7 @@ def validate_inputs(input_df: pd.DataFrame) -> Tuple[pd.DataFrame, List]:
         input_list = input_df.to_dict(orient="records")
         
         # Validate data using Pydantic schema
-        validated_data = [BankLoanDataInputSchema(**item) for item in input_list]
+        validated_data = [PatientDataInputSchema(**item) for item in input_list]
         validated_data = pd.DataFrame([item.model_dump() for item in validated_data])  # Use model_dump()
     except ValidationError as e:
         errors = [error.dict() for error in e.errors()]
@@ -64,4 +63,4 @@ def validate_inputs(input_df: pd.DataFrame) -> Tuple[pd.DataFrame, List]:
     return validated_data, errors
 
 class MultipleDataInputs(BaseModel):
-    inputs: List[BankLoanDataInputSchema]
+    inputs: List[PatientDataInputSchema]

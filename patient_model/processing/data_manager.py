@@ -7,15 +7,15 @@ import joblib
 import pandas as pd
 from sklearn.pipeline import Pipeline
 
-from bankloan_model.config.core import config, TRAINED_MODEL_DIR, DATASET_DIR
-from bankloan_model import __version__ as _version
+from patient_model.config.core import config, TRAINED_MODEL_DIR, DATASET_DIR
+from patient_model import __version__ as _version
 
 logger = logging.getLogger(__name__)
 
 def load_dataset(*, file_name: str) -> pd.DataFrame:
     """Loads the bankloan data from a file."""
     dataframe = pd.read_csv(Path(DATASET_DIR)/ file_name)
-    dataframe.rename(columns={'cb_person_default_on_file': 'previous_loan_defaults_on_file'}, inplace=True)
+    #dataframe.rename(columns={'cb_person_default_on_file': 'previous_loan_defaults_on_file'}, inplace=True)
     return dataframe
 
 def remove_old_pipelines(*, files_to_keep: List[str]) -> None:
@@ -95,15 +95,9 @@ def pre_pipeline_preparation(*, data_frame: pd.DataFrame) -> pd.DataFrame:
     data = data_frame.copy()
     
     # Drop unnecessary columns if they exist
-    if "loan_status" in data.columns:
-        data.drop(labels=["loan_status"], axis=1, inplace=True)
+    if "DEATH_EVENT" in data.columns:
+        data.drop(labels=["DEATH_EVENT"], axis=1, inplace=True)
         
-    # Rename columns for consistency
-    if "cb_person_default_on_file" in data.columns:
-        data.rename(
-            columns={"cb_person_default_on_file": "previous_loan_defaults_on_file"}, 
-            inplace=True
-        )
         
     logger.info("Data preparation completed")
     return data

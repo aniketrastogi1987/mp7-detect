@@ -7,8 +7,8 @@ sys.path.append(str(root))
 import pytest
 from sklearn.model_selection import train_test_split
 
-from bankloan_model.config.core import config
-from bankloan_model.processing.data_manager import load_dataset
+from patient_model.config.core import config
+from patient_model.processing.data_manager import load_dataset
 
 
 # @pytest.fixture is a decorator in the pytest testing framework used to define a fixture. 
@@ -20,8 +20,8 @@ from bankloan_model.processing.data_manager import load_dataset
 def sample_input_data():
     data = load_dataset(file_name=config.app_config_.training_data_file)
 
-    X = data.drop(config.model_config_.loan_status, axis=1)       # predictors
-    y = data[config.model_config_.loan_status]                    # target
+    X = data.drop(config.model_config_.target, axis=1)       # predictors
+    y = data[config.model_config_.target]                    # target
 
     # divide train and test
     X_train, X_test, y_train, y_test = train_test_split(

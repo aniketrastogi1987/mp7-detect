@@ -6,4 +6,3 @@ ruamel.yaml
 scikit-learn
 strictyaml
 xgboost
-optuna

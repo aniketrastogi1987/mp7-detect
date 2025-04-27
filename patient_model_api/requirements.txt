@@ -1,0 +1,8 @@
+uvicorn>=0.16.0,<0.18.0
+fastapi>=0.64.0,<1.0.0
+pydantic >=1.8.1,<2.0.0
+gradio
+urllib3
+
+# Local package
+patient_model-0.0.1-py3-none-any.whl

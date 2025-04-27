@@ -9,10 +9,10 @@ from typing import Dict, List
 from pydantic import BaseModel
 from strictyaml import YAML, load
 
-import bankloan_model
+import patient_model
 
 # Project Directories
-PACKAGE_ROOT = Path(bankloan_model.__file__).resolve().parent
+PACKAGE_ROOT = Path(patient_model.__file__).resolve().parent
 #print(PACKAGE_ROOT)
 ROOT = PACKAGE_ROOT.parent
 CONFIG_FILE_PATH = PACKAGE_ROOT / "config.yml"
@@ -37,23 +37,13 @@ class ModelConfig(BaseModel):
     training and feature engineering.
     """
 
-    loan_status: str
+    target: str
     features: List[str]
-    unused_fields: List[str]
-    gender_var: str 
-    education_var:str 
-    home_own_var:str 
-    intent_var: str
-    previous_defaults_var: str 
-    gender_mappings: Dict[str, int]
-    education_mappings: Dict[str, int]
-    home_own_mappings: Dict[str, int]
-    intent_mappings: Dict[str, int]
-    previous_defaults_mappings: Dict[str, int]
-  
+    
     test_size:float
     random_state: int
     n_estimators: int
+    max_leaves: int
     max_depth: int
     max_features: int
 
@@ -90,9 +80,9 @@ def create_and_validate_config(parsed_config: YAML = None) -> Config:
     if parsed_config is None:
         parsed_config = fetch_config_from_yaml()
 
-    #parsed_data = parsed_config.data
-    #if 'target' in parsed_data:
-    #    parsed_data['loan_status'] = parsed_data.pop('target', None)
+    parsed_data = dict(parsed_config.data)
+    if 'target' in parsed_data:
+        parsed_data['target'] = 'DEATH_EVENT'
     
     # specify the data attribute from the strictyaml YAML type.
     _config = Config(

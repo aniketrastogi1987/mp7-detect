@@ -5,29 +5,29 @@ parent, root = file.parent, file.parents[1]
 sys.path.append(str(root))
 
 import numpy as np
-from bankloan_model.config.core import config
-from bankloan_model.processing.features import Mapper
+from patient_model.config.core import config
+from patient_model.processing.features import OutlierHandler
 import pytest
 
 
 def test_intent_transformer(sample_input_data):
     # Given
-    mapper = Mapper(
-        variables=config.model_config_.intent_var, mappings=config.model_config_.intent_mappings # intent
+    handler = OutlierHandler(
+        columns=['creatinine_phosphokinase']
     )
     
     X = sample_input_data[0].copy()
     X = X.reset_index(drop=True)  # Reset the index
     
-    # Check if index 17 exists
-    if len(X) > 17:
-        #assert np.isnan(X.loc[17,'loan_intent'])
-        assert X.loc[17, 'loan_intent'] is not None
+    # Check if index 60 exists
+    if len(X) > 60:
+        #assert np.isnan(X.loc[60,'loan_intent'])
+        assert X.loc[60, 'creatinine_phosphokinase'] is not None
 
         # When
-        subject = mapper.transform(X)
+        subject = handler.transform(X)
 
         # Then
-        assert subject.loc[17,'loan_intent'] == mapper.mappings[X.loc[17,'loan_intent']]
+        assert subject.loc[60,'creatinine_phosphokinase'] == handler.mappings[X.loc[60,'creatinine_phosphokinase']]
     else:
-        pytest.skip("Index 17 does not exist in the DataFrame")
+        pytest.skip("Index 60 does not exist in the DataFrame")
