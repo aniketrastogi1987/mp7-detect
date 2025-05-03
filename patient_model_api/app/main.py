@@ -22,12 +22,69 @@ from patient_model import __version__ as _version
 from patient_model.config.core import config
 from sklearn.model_selection import train_test_split
 from patient_model.predict import make_prediction
+import prometheus_client as prom
 
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
 
 # FastAPI object
 app = FastAPI()
+
+
+acc_metric = prom.Gauge('patient_accuracy_score', 'Accuracy score for few random 100 test samples')
+f1_metric = prom.Gauge('patient_f1_score', 'F1 score for few random 100 test samples')
+precision_metric = prom.Gauge('patient_precision_score', 'Precision score for few random 100 test samples')
+recall_metric = prom.Gauge('patient_recall_score', 'Recall score for few random 100 test samples')
+
+# LOAD TEST DATA
+pipeline_file_name = f"{config.app_config_.pipeline_save_file}{_version}.pkl"
+patient_pipe= load_pipeline(file_name=pipeline_file_name)
+data = load_dataset(file_name=config.app_config_.training_data_file)    # read complete data
+
+X_train, X_test, y_train, y_test = train_test_split(                   # divide into train and test set
+    data[config.model_config_.features],
+    data[config.model_config_.target],
+    test_size=config.model_config_.test_size,
+    random_state=config.model_config_.random_state,
+)
+test_data = X_test.copy()
+test_data['target'] = y_test.values
+
+
+# Function for updating metrics
+def update_metrics():
+    global test_data
+    max_size = len(test_data)
+    
+    # Adjust sample size to the available data
+    size = min(5, max_size)  # Use 5 or the maximum available rows, whichever is smaller
+    
+    # Sample rows randomly
+    test = test_data.sample(size, random_state=random.randint(0, 50))
+    
+    # Prediction
+    y_pred = patient_pipe.predict(test.iloc[:, :-1])
+    
+    # Calculate metrics
+    acc = round(accuracy_score(test['target'], y_pred), 3)  # Accuracy score
+    f1 = round(f1_score(test['target'], y_pred), 3)  # F1 score
+    precision = round(precision_score(test['target'], y_pred), 3)  # Precision score
+    recall = round(recall_score(test['target'], y_pred), 3)  # Recall score
+    
+    # Update Prometheus metrics
+    acc_metric.set(acc)
+    f1_metric.set(f1)
+    precision_metric.set(precision)
+    recall_metric.set(recall)
+
+
+@app.get("/metrics")
+
+async def get_metrics():
+    update_metrics()
+    return Response(media_type="text/plain", content= prom.generate_latest())
+
+################################# Prometheus related code END ######################################################
 
 
 # UI - Input components
