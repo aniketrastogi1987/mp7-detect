@@ -16,7 +16,7 @@ ADD app/* . /app/
 
 
 # expose port for application
-EXPOSE 8001
+EXPOSE 8080
 
 # start fastapi application
 CMD ["python", "app/main.py"]
