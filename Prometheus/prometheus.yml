@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 20s     # Default scrape interval
+  evaluation_interval: 20s # Default rule evaluation interval
+
+scrape_configs:
+  - job_name: "prometheus"
+    metrics_path: "/metrics"
+    scheme: "https"
+    scrape_interval: 10s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ["bookish-space-garbanzo-97w4p94vq44cxpr9-9090.app.github.dev"]  # Replace with actual target, e.g. "localhost:9090"
+
+
+  - job_name: "patient prediction"
+    metrics_path: "/metrics"
+    scheme: "https"
+    scrape_interval: 10s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ["bookish-space-garbanzo-97w4p94vq44cxpr9-8080.app.github.dev"]  # Replace with actual target, e.g. "localhost:9090"
